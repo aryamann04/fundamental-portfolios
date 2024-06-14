@@ -3,11 +3,17 @@ from print import print_portfolio_stats, plot_portfolio_returns
 
 #-------[parameters]-------#
 metric = 'CAPEI'
-start_date = '2000-06-01'
-end_date = '2024-01-01'
+start_date = '2008-09-30'
+end_date = '2010-09-30'
+index = 'russell200'
+plot_granularity = 'quarterly'
 
 """
-earliest start_date: 2000-06-01
+NOTE: Russell Top 200 portfolios show Russell 2000 (^RUT) as index on plot 
+
+[NASDAQ 100] earliest start_date: 2000-06-01
+[Russell 200] earliest start_date: 2008-09-30
+[Russell 200] latest end_date: 2017-09-30
 
 available metrics for portfolio construction:
 
@@ -82,7 +88,6 @@ available metrics for portfolio construction:
 69. staff_sale    (Float)  : Labor Expenses/Sales (staff_sale)
 """
 
-portfolios, portfolio_stats = rebalanced_portfolio(metric, start_date=start_date, end_date=end_date)
+portfolios, portfolio_stats = rebalanced_portfolio(metric, index=index, start_date=start_date, end_date=end_date)
 print_portfolio_stats(portfolio_stats)
-plot_portfolio_returns(portfolios, granularity='quarterly')
-
+plot_portfolio_returns(portfolios, start_date=start_date, end_date=end_date, granularity=plot_granularity, index=index)
