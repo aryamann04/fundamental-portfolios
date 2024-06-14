@@ -4,7 +4,7 @@ import yfinance as yf
 import matplotlib.colors as mcolors
 import numpy as np
 
-def plot_portfolio_returns(daily_returns_list, granularity='daily'):
+def plot_portfolio_returns(daily_returns_list, start_date, end_date, granularity, index):
     if not daily_returns_list or not isinstance(daily_returns_list, list):
         print("Input should be a list of DataFrames with daily returns.")
         return
@@ -21,16 +21,20 @@ def plot_portfolio_returns(daily_returns_list, granularity='daily'):
         print("No non-empty dataframes found in daily_returns_list.")
         return
 
-    if granularity == 'daily':
-        nasdaq_return = yf.download('^NDX', start=date_range.min(), end=date_range.max())
-    else:
-        nasdaq_return = yf.download('^NDX', start=date_range.min(), end=date_range.max(), interval='3mo')
+    if index == 'nasdaq100':
+        if granularity == 'daily':
+            index_return = yf.download('^NDX', start=start_date, end=end_date)
+        else:
+            index_return = yf.download('^NDX', start=start_date, end=end_date, interval='3mo')
+    elif index == 'russell200':
+        if granularity == 'daily':
+            index_return = yf.download('^RUT', start=start_date, end=end_date)
+        else:
+            index_return = yf.download('^RUT', start=start_date, end=end_date, interval='3mo')
 
-    nasdaq_return['Return'] = nasdaq_return['Adj Close'].pct_change()
-    nasdaq_return['Cumulative Return'] = (1 + nasdaq_return['Return']).cumprod()
-
-    # nasdaq_return = resample_data(nasdaq_return, granularity)
-    nasdaq_return['Cumulative Return'] = (1 + nasdaq_return['Return']).cumprod()
+    index_return['Return'] = index_return['Adj Close'].pct_change()
+    index_return['Cumulative Return'] = (1 + index_return['Return']).cumprod()
+    index_return['Cumulative Return'] = (1 + index_return['Return']).cumprod()
 
     plt.figure(figsize=(12, 8))
 
@@ -41,7 +45,10 @@ def plot_portfolio_returns(daily_returns_list, granularity='daily'):
         daily_returns_df['Cumulative Return'] = (1 + daily_returns_df['Return']).cumprod()
         plt.plot(daily_returns_df['Date'], daily_returns_df['Cumulative Return'], label=portfolio_names[i], color=colors[i])
 
-    plt.plot(nasdaq_return.index, nasdaq_return['Cumulative Return'], label='NASDAQ 100', linestyle='--', color='black')
+    if index == 'nasdaq100':
+        plt.plot(index_return.index, index_return['Cumulative Return'], label='NASDAQ 100', linestyle='--', color='black')
+    elif index == 'russell200':
+        plt.plot(index_return.index, index_return['Cumulative Return'], label='Russell 2000', linestyle='--', color='black')
 
     plt.xlabel('Date')
     plt.ylabel('Cumulative Return')
