@@ -1,4 +1,5 @@
 # fundamental-portfolios
+[in progress]
 
 This project is a portfolio construction tool that allows users to analyze stock portfolios based on various financial metrics. Users can rank stocks, perform backtesting, and visualize cumulative returns over time. The tool also provides detailed information about the tickers in each portfolio group, including their performance and financial metrics. The data ranges from `2000-06-01` to `2023-12-31`. Historical index constituents, fundamental metrics, and price data was acquired from CRSP and Compustat databases via Wharton Research Data Services. 
 
