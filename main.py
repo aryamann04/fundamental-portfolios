@@ -2,15 +2,14 @@ from backtest import rebalanced_portfolio
 from print import print_portfolio_stats, plot_portfolio_returns
 
 #-------[parameters]-------#
-metric = 'CAPEI'
-start_date = '2008-09-30'
-end_date = '2010-09-30'
-index = 'russell200'
+metric = 'pe_exi'
+start_date = '2013-09-30'
+end_date = '2023-09-30'
+index = 'sp500'
 plot_granularity = 'quarterly'
 
 """
-NOTE: Russell Top 200 portfolios show Russell 2000 (^RUT) as index on plot 
-
+[S&P 500]
 [NASDAQ 100] earliest start_date: 2000-06-01
 [Russell 200] earliest start_date: 2008-09-30
 [Russell 200] latest end_date: 2017-09-30
@@ -90,4 +89,5 @@ available metrics for portfolio construction:
 
 portfolios, portfolio_stats = rebalanced_portfolio(metric, index=index, start_date=start_date, end_date=end_date)
 print_portfolio_stats(portfolio_stats)
-plot_portfolio_returns(portfolios, start_date=start_date, end_date=end_date, granularity=plot_granularity, index=index)
+plot_portfolio_returns(portfolios, start_date=start_date, end_date=end_date,
+                       granularity=plot_granularity, index=index, metric=metric)
