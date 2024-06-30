@@ -36,6 +36,16 @@ def russell200_tickers(date):
     data = filtered_data[filtered_data['Date'] == most_recent_date]
     return data['Ticker'].unique().tolist()
 
+def sp500_tickers(date):
+    date = pd.to_datetime(date).to_period('M')
+    df = pd.read_csv('/Users/aryaman/Downloads/sp500historicalconstituents.csv')
+    df['date'] = pd.to_datetime(df['date'], format='%Y-%m').dt.to_period('M')
+
+    closest_date = df[df['date'] <= date]['date'].max()
+    tickers = df[df['date'] == closest_date]['tickers'].values[0]
+    tickers_list = tickers.strip("[]").replace("'", "").split(", ")
+
+    return tickers_list
 
 def historical_data(given_date, index):
     if index == 'nasdaq100':
@@ -44,8 +54,11 @@ def historical_data(given_date, index):
     elif index == 'russell200':
         ticker_list = russell200_tickers(given_date)
         df = pd.read_csv('/Users/aryaman/Downloads/russell200historicaldata.csv')
+    elif index == 'sp500':
+        ticker_list = sp500_tickers(given_date)
+        df = pd.read_csv('/Users/aryaman/Downloads/sp500historicaldata.csv')
     else:
-        raise ValueError("Invalid index. Use 'nasdaq100' or 'russell200'.")
+        raise ValueError("Invalid index.")
 
     df['public_date'] = pd.to_datetime(df['public_date'])
     df_filtered = df[df['TICKER'].isin(ticker_list)]
@@ -65,7 +78,8 @@ def historical_data(given_date, index):
 
 # Load price dataframes
 nasdaq_prices = pd.read_csv('/Users/aryaman/Downloads/nasdaqprices.csv', parse_dates=['datadate'])
-russell_prices = pd.read_csv('/Users/aryaman/Downloads/russell200prices.csv',
+russell_prices = pd.read_csv('/Users/aryaman/Downloads/russell200prices.csv', parse_dates=['datadate'])
+sp500_prices = pd.read_csv('/Users/aryaman/Downloads/sp500prices.csv',
                              parse_dates=['datadate'])
 
 def price(ticker, start_date, end_date, index):
@@ -76,6 +90,8 @@ def price(ticker, start_date, end_date, index):
         historical_prices = nasdaq_prices
     elif index == 'russell200':
         historical_prices = russell_prices
+    elif index == 'sp500':
+        historical_prices = sp500_prices
     else:
         raise ValueError("Invalid index. Use 'nasdaq100' or 'russell200'.")
 
@@ -88,19 +104,3 @@ def price(ticker, start_date, end_date, index):
         return None
 
     return ticker_data[['datadate', 'prccd']].set_index('datadate').sort_index()
-
-def get_full_nasdaq_data():
-    full_df = pd.read_csv('/Users/aryaman/Downloads/nasdaq100historicaldata.csv')
-    return full_df
-
-def get_nasdaq_constituents():
-    full_nasdaq = pd.read_csv('/Users/aryaman/Downloads/nasdaqconstituents.csv')
-    return full_nasdaq
-
-def get_full_russell_data():
-    full_df = pd.read_csv('/Users/aryaman/Downloads/russell200historicaldata.csv')
-    return full_df
-
-def get_russell_constituents():
-    full_nasdaq = pd.read_csv('/Users/aryaman/Downloads/russell200constituents.csv')
-    return full_nasdaq
