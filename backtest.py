@@ -45,13 +45,22 @@ def rank_by(given_date, index, metric, **kwargs):
 #                                            #
 #--------------------------------------------#
 
-def year_backtest(metric, start_date, index):
+def backtest(metric, start_date, index, frequency='yearly'):
+    # Rank portfolios based on the given metric
     less_equal_zero, quintiles = rank_by(start_date, index, metric)
     portfolios = [less_equal_zero] + quintiles
     portfolio_tickers = [portfolio['TICKER'].tolist() for portfolio in portfolios]
 
+    # Convert start_date to datetime and set the end_date based on the frequency
     start_date = pd.to_datetime(start_date)
-    end_date = start_date + timedelta(days=365)
+    if frequency == 'monthly':
+        end_date = start_date + pd.DateOffset(months=1)
+    elif frequency == 'quarterly':
+        end_date = start_date + pd.DateOffset(months=3)
+    elif frequency == 'yearly':
+        end_date = start_date + timedelta(days=365)
+    else:
+        raise ValueError("Invalid frequency. Choose from 'monthly', 'quarterly', or 'yearly'.")
 
     daily_returns_list = []
 
@@ -85,7 +94,7 @@ def year_backtest(metric, start_date, index):
 #                                            #
 #--------------------------------------------#
 
-def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-12-31'):
+def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-12-31', frequency='yearly'):
     current_date = pd.to_datetime(start_date)
     end_date = pd.to_datetime(end_date)
 
@@ -93,7 +102,7 @@ def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-
     portfolio_stats = {i: [] for i in range(6)}
 
     while current_date < end_date:
-        annual_returns, portfolios = year_backtest(metric, current_date.strftime('%Y-%m-%d'), index)
+        annual_returns, portfolios = backtest(metric, current_date.strftime('%Y-%m-%d'), index)
 
         for i in range(6):
             cumulative_portfolios[i] = pd.concat([cumulative_portfolios[i], annual_returns[i]]).reset_index(drop=True)
@@ -109,7 +118,12 @@ def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-
                 }
                 portfolio_stats[i].append(stats)
 
-        current_date += timedelta(days=365)
+        if frequency == 'monthly':
+            current_date += pd.DateOffset(months=1)
+        elif frequency == 'quarterly':
+            current_date += pd.DateOffset(months=3)
+        else:
+            current_date += timedelta(days=365)
 
     for portfolio in cumulative_portfolios:
         portfolio['Return'].fillna(0, inplace=True)
