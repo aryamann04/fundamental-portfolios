@@ -121,7 +121,6 @@ def plot_return(final_df):
     start_date = '1987-07-01'
     end_date = '2023-12-31'
 
-    # Download S&P 500 data using yfinance with monthly frequency
     sp500 = yf.download('^GSPC', start=start_date, end=end_date, interval='1mo', progress=False)
     sp500['Return'] = sp500['Adj Close'].pct_change()
     sp500['CumulativeReturn'] = (1 + sp500['Return']).cumprod()
@@ -144,6 +143,5 @@ def plot_return(final_df):
     plt.grid(True)
     plt.show()
 
-# Example usage:
 mkt_cap, mth_return, mcap_weights, mcap_weighted_return, final_df = create_price_dataframe()
 plot_return(final_df)
