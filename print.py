@@ -1,8 +1,10 @@
-import matplotlib.pyplot as plt
 import pandas as pd
-import yfinance as yf
-import matplotlib.colors as mcolors
 import numpy as np
+import seaborn as sns
+import yfinance as yf
+
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 
 def plot_portfolio_returns(daily_returns_list, start_date, end_date, granularity, index, metric):
     if not daily_returns_list or not isinstance(daily_returns_list, list):
@@ -68,9 +70,41 @@ def print_portfolio_stats(portfolio_stats):
         for stat in stats:
             print(stat)
 
+# CAGR table and annual returns heatmap
+def portfolio_analysis(portfolio_stats, metric):
+    portfolio_categories = ['<=0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5']
+
+    all_data = []
+    for portfolio, stats_list in portfolio_stats.items():
+        for stats in stats_list:
+            stats['Portfolio'] = portfolio_categories[portfolio]
+            all_data.append(stats)
+
+    portfolio_df = pd.DataFrame(all_data)
+
+    portfolio_df['Year'] = portfolio_df['Year'].astype(int)
+    years = portfolio_df['Year'].nunique()
+
+    cagr_df = portfolio_df.groupby('Portfolio')['Annual Return'].apply(
+        lambda x: (np.prod(1 + x) ** (1 / years)) - 1).reset_index()
+    cagr_df.columns = ['Portfolio', 'CAGR']
+
+    cagr_df['Portfolio'] = pd.Categorical(cagr_df['Portfolio'], categories=portfolio_categories, ordered=True)
+    cagr_df = cagr_df.sort_values('Portfolio')
+
+    print("Compounded Annual Growth Rates (CAGR) for each Portfolio:")
+    print(cagr_df.to_string(index=False))
+
+    heatmap_data = portfolio_df.pivot_table(index='Portfolio', columns='Year', values='Annual Return')
+    heatmap_data = heatmap_data.reindex(portfolio_categories)
+
+    plt.figure(figsize=(10, 6))
+    sns.heatmap(heatmap_data, annot=True, fmt=".2%", cmap='RdYlGn', center=0, cbar_kws={'format': '%.0f%%'},
+                annot_kws={"size": 8, "rotation": 90})
+    plt.title(f'Annual Returns by {get_metric_description(metric)}')
+    plt.show()
+
 def resample_data(df, granularity):
-    if 'Date' not in df.columns:
-        raise KeyError("The DataFrame does not have a 'Date' column.")
 
     df = df.set_index('Date')
 
