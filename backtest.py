@@ -3,7 +3,7 @@ import yfinance as yf
 from datetime import datetime, timedelta
 
 from datapipeline import historical_data, price
-
+from largecapindex import process_csv
 #------------------[rank_by]-----------------#
 #                                            #
 #     ranks index constituents by a given    #
@@ -86,9 +86,59 @@ def backtest(metric, start_date, index, frequency='yearly'):
 
     return daily_returns_list, portfolios
 
+def mcap_backtest(metric, start_date, index='sp500'):
+    less_equal_zero, quintiles = rank_by(start_date, index, metric)
+    portfolios = [less_equal_zero] + quintiles
+    portfolio_tickers = [portfolio['TICKER'].tolist() for portfolio in portfolios]
+
+    df = process_csv()
+
+    start_date = pd.to_datetime(start_date)
+    end_date = start_date + pd.DateOffset(months=1)
+    date_range = pd.period_range(start=start_date, end=end_date, freq='M')
+
+    portfolio_dfs = []
+
+    for portfolio in portfolio_tickers:
+
+        mkt_cap = pd.DataFrame(index=date_range)
+        mth_return = pd.DataFrame(index=date_range)
+        mcap_weights = pd.DataFrame(index=date_range)
+        mcap_weighted_return = pd.DataFrame(index=date_range)
+
+        for date in date_range:
+            tickers = portfolio
+            df_filtered = df[df['date'] == date]
+
+            for ticker in tickers:
+                ticker_data = df_filtered[df_filtered['Ticker'] == ticker]
+                if not ticker_data.empty:
+                    mkt_cap.at[date, ticker] = ticker_data['MthCap'].values[0]
+                    mth_return.at[date, ticker] = ticker_data['MthRetx'].values[0]
+
+            if date in mkt_cap.index:
+                total_market_cap = mkt_cap.loc[date].sum()
+                if total_market_cap != 0:
+                    for ticker in tickers:
+                        if ticker in mkt_cap.columns:
+                            mcap_weights.at[date, ticker] = mkt_cap.at[date, ticker] / total_market_cap
+
+            if date in mcap_weights.index:
+                row_sum = mcap_weights.loc[date].sum()
+                if row_sum != 0:
+                    mcap_weights.loc[date, 'SumOfWeights'] = row_sum
+                    mcap_weights.loc[date] = mcap_weights.loc[date] / row_sum
+
+        mcap_weighted_return = mth_return * mcap_weights
+        portfolio_return = mcap_weighted_return.sum(axis=1)
+        portfolio_df = pd.DataFrame({'Date': date_range.astype(str), 'Return': portfolio_return})
+        portfolio_dfs.append(portfolio_df)
+
+    return portfolio_dfs, portfolios
+
 #-----------[rebalanced_portfolio]-----------#
 #                                            #
-# uses year_backtest to rebalance portfolio  #
+#    uses backtest to rebalance portfolio    #
 #    input metric, start date, & end date    #
 #      default June 2000 ---> Dec 2023       #
 #                                            #
@@ -102,10 +152,13 @@ def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-
     portfolio_stats = {i: [] for i in range(6)}
 
     while current_date < end_date:
-        annual_returns, portfolios = backtest(metric, current_date.strftime('%Y-%m-%d'), index)
+        if index == 'sp500':
+            returns, portfolios = mcap_backtest(metric, current_date.strftime('%Y-%m-%d'), index)
+        else:
+            returns, portfolios = backtest(metric, current_date.strftime('%Y-%m-%d'), index)
 
         for i in range(6):
-            cumulative_portfolios[i] = pd.concat([cumulative_portfolios[i], annual_returns[i]]).reset_index(drop=True)
+            cumulative_portfolios[i] = pd.concat([cumulative_portfolios[i], returns[i]]).reset_index(drop=True)
             if not portfolios[i].empty:
                 stats = {
                     'Year': current_date.year,
@@ -114,7 +167,7 @@ def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-
                     'Max': portfolios[i][metric].max(),
                     'Mean': portfolios[i][metric].mean(),
                     'Std': portfolios[i][metric].std(),
-                    'Annual Return': (1 + annual_returns[i]['Return']).prod() - 1
+                    'Annual Return': (1 + returns[i]['Return']).prod() - 1
                 }
                 portfolio_stats[i].append(stats)
 
