@@ -83,3 +83,13 @@ Below are the available metrics that you can use for your analysis:
 - `rd_sale`        : Research and Development/Sales
 - `adv_sale`       : Advertising Expenses/Sales
 - `staff_sale`     : Labor Expenses/Sales
+
+See below the results of a 20-year backtest of equally-weighted portfolios by Price to Earnings on the NASDAQ 100. 
+
+<img width="900" alt="Screenshot 2024-07-03 at 10 16 11 PM" src="https://github.com/aryamann04/fundamental-portfolios/assets/140534650/1d675bbc-cb0b-4c5d-802e-318d19c9e425">
+
+
+<img width="900" alt="Screenshot 2024-07-03 at 7 09 39 PM" src="https://github.com/aryamann04/fundamental-portfolios/assets/140534650/725a44ab-5544-4585-b42f-fadc5ce43315">
+
+
+
