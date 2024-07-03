@@ -10,7 +10,7 @@ This project is a portfolio construction tool that allows users to analyze stock
 - Visualize cumulative returns
 - Detailed portfolio analysis including tickers, returns, and financial metrics
 
-See below the results of a 20-year backtest of equally-weighted portfolios by Price to Earnings on the NASDAQ 100. 
+See below the results of a 20-year backtest of equally-weighted, yearly-rebalanced portfolios by Price to Earnings on the NASDAQ 100. 
 
 <img width="900" alt="Screenshot 2024-07-03 at 10 16 11 PM" src="https://github.com/aryamann04/fundamental-portfolios/assets/140534650/1d675bbc-cb0b-4c5d-802e-318d19c9e425">
 
