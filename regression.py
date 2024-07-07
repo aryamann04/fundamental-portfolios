@@ -43,7 +43,7 @@ def regression(index, metrics, start_date, end_date):
 
     model = sm.OLS(y, X)
     results = model.fit()
-
+    print(f"OLS Regression with {', '.join(get_metric_description(metric) for metric in metrics)} vs. Return")
     print(results.summary())
     return df
 
@@ -119,5 +119,5 @@ if __name__ == "__main__":
     df = metric_and_return_df('nasdaq100', metric, '2021-06-30', '2023-06-30')
     plot_metric_return(df, metric)
 
-    pd.set_option('display.max_rows', None)
-    regression('nasdaq100', ['npm', 'aftret_equity'], '2021-06-30', '2023-06-30')
+    metrics = ['fcf_ocf', 'aftret_equity', 'cash_conversion']
+    regression('nasdaq100', metrics, '2023-06-30', '2024-06-30')
