@@ -7,31 +7,14 @@ import statsmodels.api as sm
 from datapipeline import price, historical_data
 from print import get_metric_description
 
-def metric_and_return_df(index, metric, start_date, end_date):
+def metric_and_return_df(index, metrics, start_date, end_date):
     start_date = pd.to_datetime(start_date)
     end_date = pd.to_datetime(end_date)
     metrics_data = historical_data(start_date, index)
     results = []
 
-    for ticker in metrics_data['TICKER'].unique():
-        metric_value = metrics_data[metrics_data['TICKER'] == ticker][metric].values[0]
-
-        price_data = price(ticker, start_date, end_date, index)
-        if price_data is not None:
-            start_price = price_data.loc[price_data.index[price_data.index <= start_date].max(), 'prccd']
-            end_price = price_data.loc[price_data.index[price_data.index <= end_date].max(), 'prccd']
-
-            stock_return = (end_price / start_price) - 1
-            results.append({'Ticker': ticker, 'MetricValue': metric_value, 'Return': stock_return})
-
-    results_df = pd.DataFrame(results).dropna()
-    return results_df
-
-def regression(index, metrics, start_date, end_date):
-    start_date = pd.to_datetime(start_date)
-    end_date = pd.to_datetime(end_date)
-    metrics_data = historical_data(start_date, index)
-    results = []
+    if isinstance(metrics, str):
+        metrics = [metrics]
 
     for ticker in metrics_data['TICKER'].unique():
         metric_values = {}
@@ -49,26 +32,31 @@ def regression(index, metrics, start_date, end_date):
             results.append(metric_values)
 
     results_df = pd.DataFrame(results).dropna()
-    results_df = remove_outliers(results_df)
-    X = sm.add_constant(results_df[metrics])
-    y = results_df['Return']
+    return results_df
+
+def regression(index, metrics, start_date, end_date):
+    df = metric_and_return_df(index, metrics, start_date, end_date)
+    df = remove_outliers(df)
+
+    X = sm.add_constant(df[metrics])
+    y = df['Return']
 
     model = sm.OLS(y, X)
     results = model.fit()
 
     print(results.summary())
-    return results_df
+    return df
 
 def plot_metric_return(df, metric):
     df_filtered = remove_outliers(df)
     plt.figure(figsize=(12, 6))
-    sns.scatterplot(x='MetricValue', y='Return', data=df_filtered)
+    sns.scatterplot(x=metric, y='Return', data=df_filtered)
 
-    X = sm.add_constant(df_filtered['MetricValue'])
+    X = sm.add_constant(df_filtered[metric])
     model = sm.OLS(df_filtered['Return'], X)
     results = model.fit()
 
-    plt.plot(df_filtered['MetricValue'], results.fittedvalues, color='red',
+    plt.plot(df_filtered[metric], results.fittedvalues, color='red',
              label=f'Fit Line (R² = {results.rsquared:.2f})')
 
     plt.xlabel(get_metric_description(metric))
@@ -80,25 +68,7 @@ def plot_metric_return(df, metric):
 
     print(results.summary())
 
-def remove_outliers(df, threshold=2):
-    q1_metric = df['MetricValue'].quantile(0.25)
-    q3_metric = df['MetricValue'].quantile(0.75)
-    iqr_metric = q3_metric - q1_metric
-    lower_bound_metric = q1_metric - threshold * iqr_metric
-    upper_bound_metric = q3_metric + threshold * iqr_metric
-
-    q1_return = df['Return'].quantile(0.25)
-    q3_return = df['Return'].quantile(0.75)
-    iqr_return = q3_return - q1_return
-    lower_bound_return = q1_return - threshold * iqr_return
-    upper_bound_return = q3_return + threshold * iqr_return
-
-    df_filtered = df[(df['MetricValue'] >= lower_bound_metric) & (df['MetricValue'] <= upper_bound_metric) &
-                     (df['Return'] >= lower_bound_return) & (df['Return'] <= upper_bound_return)]
-
-    return df_filtered
-
-def perform_regressions(index, start_date, end_date):
+def all_metrics_regression(index, start_date, end_date):
     results_list = []
     metrics = ['CAPEI', 'bm', 'evm', 'pe_op_basic', 'pe_op_dil', 'pe_exi', 'pe_inc', 'ps', 'pcf', 'dpr', 'npm',
                'opmbd', 'opmad', 'gpm', 'ptpm', 'cfm', 'roa', 'roe', 'roce', 'efftax', 'aftret_eq', 'aftret_invcapx',
@@ -131,28 +101,23 @@ def perform_regressions(index, start_date, end_date):
 
     return results_df
 
+def remove_outliers(df, threshold=2):
+    df_filtered = pd.DataFrame()
+    for col in df.columns:
+        q1 = df[col].quantile(0.25)
+        q3 = df[col].quantile(0.75)
+        iqr = q3 - q1
+        lower_bound = q1 - threshold * iqr
+        upper_bound = q3 + threshold * iqr
+        filtered_rows = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
+        df_filtered = pd.concat([df_filtered, filtered_rows], ignore_index=True)
+
+    return df_filtered
+
 if __name__ == "__main__":
     metric = 'npm'
     df = metric_and_return_df('nasdaq100', metric, '2021-06-30', '2023-06-30')
     plot_metric_return(df, metric)
-    
+
     pd.set_option('display.max_rows', None)
-    
-    df1 = perform_regressions('nasdaq100', '2023-06-30', '2024-06-30')
-    print("1yr")
-    print(df1)
-    df2 = perform_regressions('nasdaq100', '2022-06-30', '2024-06-30')
-    print("2yr")
-    print(df2)
-    df3 = perform_regressions('nasdaq100', '2021-06-30', '2024-06-30')
-    print("3yr")
-    print(df3)
-    df4 = perform_regressions('nasdaq100', '2020-06-30', '2024-06-30')
-    print("4yr")
-    print(df4)
-    df5 = perform_regressions('nasdaq100', '2019-06-30', '2024-06-30')
-    print("5yr")
-    print(df5)
-    df10 = perform_regressions('nasdaq100', '2014-06-30', '2024-06-30')
-    print("10yr")
-    print(df10)
+    regression('nasdaq100', ['npm', 'aftret_equity'], '2021-06-30', '2023-06-30')
