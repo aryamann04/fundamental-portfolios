@@ -49,16 +49,15 @@ def regression(index, metrics, start_date, end_date):
             results.append(metric_values)
 
     results_df = pd.DataFrame(results).dropna()
-    X = results_df[metrics]  # Covariates (metrics)
-    X = sm.add_constant(X)  # Add intercept
-    y = results_df['Return']  # Dependent variable
+    results_df = remove_outliers(results_df)
+    X = sm.add_constant(results_df[metrics])
+    y = results_df['Return']
 
     model = sm.OLS(y, X)
     results = model.fit()
 
     print(results.summary())
     return results_df
-
 
 def plot_metric_return(df, metric):
     df_filtered = remove_outliers(df)
@@ -81,7 +80,7 @@ def plot_metric_return(df, metric):
 
     print(results.summary())
 
-def remove_outliers(df, threshold=3):
+def remove_outliers(df, threshold=2):
     q1_metric = df['MetricValue'].quantile(0.25)
     q3_metric = df['MetricValue'].quantile(0.75)
     iqr_metric = q3_metric - q1_metric
@@ -99,11 +98,61 @@ def remove_outliers(df, threshold=3):
 
     return df_filtered
 
+def perform_regressions(index, start_date, end_date):
+    results_list = []
+    metrics = ['CAPEI', 'bm', 'evm', 'pe_op_basic', 'pe_op_dil', 'pe_exi', 'pe_inc', 'ps', 'pcf', 'dpr', 'npm',
+               'opmbd', 'opmad', 'gpm', 'ptpm', 'cfm', 'roa', 'roe', 'roce', 'efftax', 'aftret_eq', 'aftret_invcapx',
+               'aftret_equity', 'pretret_noa', 'pretret_earnat', 'GProf', 'equity_invcap', 'debt_invcap',
+               'totdebt_invcap', 'capital_ratio', 'int_debt', 'int_totdebt', 'cash_lt', 'invt_act', 'rect_act',
+               'debt_at', 'debt_ebitda', 'short_debt', 'curr_debt', 'lt_debt', 'profit_lct', 'ocf_lct', 'cash_debt',
+               'fcf_ocf', 'lt_ppent', 'dltt_be', 'debt_assets', 'debt_capital', 'de_ratio', 'intcov', 'intcov_ratio',
+               'cash_ratio', 'quick_ratio', 'curr_ratio', 'cash_conversion', 'inv_turn', 'at_turn', 'rect_turn',
+               'pay_turn', 'sale_invcap', 'sale_equity', 'sale_nwc', 'rd_sale', 'adv_sale', 'staff_sale', 'accrual',
+               'ptb', 'PEG_trailing']
+    for metric in metrics:
+        print(metric)
+        df = metric_and_return_df(index, metric, start_date, end_date)
+        df = remove_outliers(df)
+
+        if df.empty:
+            continue
+
+        X = sm.add_constant(df['MetricValue'])
+        y = df['Return']
+        model = sm.OLS(y, X)
+        results = model.fit()
+
+        results_list.append({'Metric': metric, 'P-Value': results.pvalues['MetricValue'],
+                             'R-Squared': results.rsquared, 'Coefficient': results.params['MetricValue'],
+                             'n': results.nobs})
+
+    results_df = pd.DataFrame(results_list)
+    results_df = results_df.sort_values(by='R-Squared', ascending=False)
+
+    return results_df
+
 if __name__ == "__main__":
-    metric = 'CAPEI'
-
-    df = metric_and_return_df('nasdaq100', metric, '2014-06-30', '2024-06-30')
+    metric = 'npm'
+    df = metric_and_return_df('nasdaq100', metric, '2021-06-30', '2023-06-30')
     plot_metric_return(df, metric)
-
-    regression_metrics = ['pcf', 'roa', 'npm']
-    regression('nasdaq100', regression_metrics, '2014-06-30', '2024-06-30')
+    
+    pd.set_option('display.max_rows', None)
+    
+    df1 = perform_regressions('nasdaq100', '2023-06-30', '2024-06-30')
+    print("1yr")
+    print(df1)
+    df2 = perform_regressions('nasdaq100', '2022-06-30', '2024-06-30')
+    print("2yr")
+    print(df2)
+    df3 = perform_regressions('nasdaq100', '2021-06-30', '2024-06-30')
+    print("3yr")
+    print(df3)
+    df4 = perform_regressions('nasdaq100', '2020-06-30', '2024-06-30')
+    print("4yr")
+    print(df4)
+    df5 = perform_regressions('nasdaq100', '2019-06-30', '2024-06-30')
+    print("5yr")
+    print(df5)
+    df10 = perform_regressions('nasdaq100', '2014-06-30', '2024-06-30')
+    print("10yr")
+    print(df10)
