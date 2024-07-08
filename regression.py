@@ -17,7 +17,7 @@ def metric_and_return_df(index, metrics, start_date, end_date):
         metrics = [metrics]
 
     for ticker in metrics_data['TICKER'].unique():
-        metric_values = {}
+        metric_values = {'Ticker': ticker}
         for metric in metrics:
             metric_value = metrics_data[metrics_data['TICKER'] == ticker][metric].values[0]
             metric_values[metric] = metric_value
@@ -36,7 +36,7 @@ def metric_and_return_df(index, metrics, start_date, end_date):
 
 def regression(index, metrics, start_date, end_date):
     df = metric_and_return_df(index, metrics, start_date, end_date)
-    df = remove_outliers(df)
+    # df = remove_outliers(df)
 
     X = sm.add_constant(df[metrics])
     y = df['Return']
@@ -48,15 +48,15 @@ def regression(index, metrics, start_date, end_date):
     return df
 
 def plot_metric_return(df, metric):
-    df_filtered = remove_outliers(df)
+    # df_filtered = remove_outliers(df)
     plt.figure(figsize=(12, 6))
-    sns.scatterplot(x=metric, y='Return', data=df_filtered)
+    sns.scatterplot(x=metric, y='Return', data=df)
 
-    X = sm.add_constant(df_filtered[metric])
-    model = sm.OLS(df_filtered['Return'], X)
+    X = sm.add_constant(df[metric])
+    model = sm.OLS(df['Return'], X)
     results = model.fit()
 
-    plt.plot(df_filtered[metric], results.fittedvalues, color='red',
+    plt.plot(df[metric], results.fittedvalues, color='red',
              label=f'Fit Line (R² = {results.rsquared:.2f})')
 
     plt.xlabel(get_metric_description(metric))
@@ -82,7 +82,7 @@ def all_metrics_regression(index, start_date, end_date):
     for metric in metrics:
         print(metric)
         df = metric_and_return_df(index, metric, start_date, end_date)
-        df = remove_outliers(df)
+        # df = remove_outliers(df)
 
         if df.empty:
             continue
@@ -104,6 +104,8 @@ def all_metrics_regression(index, start_date, end_date):
 def remove_outliers(df, threshold=2):
     df_filtered = pd.DataFrame()
     for col in df.columns:
+        if col == 'Ticker':
+            continue
         q1 = df[col].quantile(0.25)
         q3 = df[col].quantile(0.75)
         iqr = q3 - q1
@@ -120,4 +122,4 @@ if __name__ == "__main__":
     plot_metric_return(df, metric)
 
     metrics = ['fcf_ocf', 'aftret_equity', 'cash_conversion']
-    regression('nasdaq100', metrics, '2023-06-30', '2024-06-30')
+    regression('nasdaq100', metrics, '2021-06-30', '2023-06-30')
