@@ -87,13 +87,13 @@ def all_metrics_regression(index, start_date, end_date):
         if df.empty:
             continue
 
-        X = sm.add_constant(df['MetricValue'])
+        X = sm.add_constant(df[metric])
         y = df['Return']
         model = sm.OLS(y, X)
         results = model.fit()
 
-        results_list.append({'Metric': metric, 'P-Value': results.pvalues['MetricValue'],
-                             'R-Squared': results.rsquared, 'Coefficient': results.params['MetricValue'],
+        results_list.append({'Metric': metric, 'P-Value': results.pvalues[metric],
+                             'R-Squared': results.rsquared, 'Coefficient': results.params[metric],
                              'n': results.nobs})
 
     results_df = pd.DataFrame(results_list)
