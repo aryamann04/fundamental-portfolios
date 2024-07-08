@@ -79,9 +79,10 @@ def all_metrics_regression(index, start_date, end_date):
                'cash_ratio', 'quick_ratio', 'curr_ratio', 'cash_conversion', 'inv_turn', 'at_turn', 'rect_turn',
                'pay_turn', 'sale_invcap', 'sale_equity', 'sale_nwc', 'rd_sale', 'adv_sale', 'staff_sale', 'accrual',
                'ptb', 'PEG_trailing']
+    
+    df = metric_and_return_df(index, metric, start_date, end_date)
     for metric in metrics:
         print(metric)
-        df = metric_and_return_df(index, metric, start_date, end_date)
         # df = remove_outliers(df)
 
         if df.empty:
