@@ -1,7 +1,8 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 import yfinance as yf
-from datetime import datetime, timedelta
 
+from datetime import datetime, timedelta
 from datapipeline import historical_data, price
 from largecapindex import process_csv
 #------------------[rank_by]-----------------#
@@ -96,7 +97,6 @@ def mcap_backtest(metric, start_date, index='sp500'):
     start_date = pd.to_datetime(start_date)
     end_date = start_date + pd.DateOffset(months=1)
     date_range = pd.period_range(start=start_date, end=end_date, freq='M')
-
     portfolio_dfs = []
 
     for portfolio in portfolio_tickers:
@@ -131,7 +131,7 @@ def mcap_backtest(metric, start_date, index='sp500'):
 
         mcap_weighted_return = mth_return * mcap_weights
         portfolio_return = mcap_weighted_return.sum(axis=1)
-        portfolio_df = pd.DataFrame({'Date': date_range.astype(str), 'Return': portfolio_return})
+        portfolio_df = pd.DataFrame({'Date': pd.to_datetime(date_range.astype(str)), 'Return': portfolio_return})
         portfolio_dfs.append(portfolio_df)
 
     return portfolio_dfs, portfolios
@@ -144,7 +144,9 @@ def mcap_backtest(metric, start_date, index='sp500'):
 #                                            #
 #--------------------------------------------#
 
-def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-12-31', frequency='yearly'):
+def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-12-31', frequency='yearly', mcap=False):
+    if mcap:
+        frequency = 'monthly'
     current_date = pd.to_datetime(start_date)
     end_date = pd.to_datetime(end_date)
 
@@ -152,7 +154,7 @@ def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-
     portfolio_stats = {i: [] for i in range(6)}
 
     while current_date < end_date:
-        if index == 'sp500':
+        if mcap:
             returns, portfolios = mcap_backtest(metric, current_date.strftime('%Y-%m-%d'), index)
         else:
             returns, portfolios = backtest(metric, current_date.strftime('%Y-%m-%d'), index)
