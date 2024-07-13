@@ -1,19 +1,16 @@
+import pandas as pd
 from backtest import rebalanced_portfolio
-from print import print_portfolio_stats, plot_portfolio_returns
+from print import print_portfolio_stats, plot_portfolio_returns, portfolio_analysis
 
 #-------[parameters]-------#
-metric = 'pe_exi'
-start_date = '2013-09-30'
-end_date = '2023-09-30'
+metric = 'pcf'
+start_date = '2018-01-01'
+end_date = '2024-01-01'
 index = 'sp500'
-plot_granularity = 'quarterly'
+plot_granularity = 'monthly'
+market_cap_weight = True
 
 """
-[S&P 500]
-[NASDAQ 100] earliest start_date: 2000-06-01
-[Russell 200] earliest start_date: 2008-09-30
-[Russell 200] latest end_date: 2017-09-30
-
 available metrics for portfolio construction:
 
 1. dpr            (Float)  : Dividend Payout Ratio (dpr)
@@ -87,7 +84,8 @@ available metrics for portfolio construction:
 69. staff_sale    (Float)  : Labor Expenses/Sales (staff_sale)
 """
 
-portfolios, portfolio_stats = rebalanced_portfolio(metric, index=index, start_date=start_date, end_date=end_date)
+portfolios, portfolio_stats = rebalanced_portfolio(metric, index=index, start_date=start_date, end_date=end_date, mcap=market_cap_weight)
 print_portfolio_stats(portfolio_stats)
+# portfolio_analysis(portfolio_stats, metric, index)
 plot_portfolio_returns(portfolios, start_date=start_date, end_date=end_date,
                        granularity=plot_granularity, index=index, metric=metric)
