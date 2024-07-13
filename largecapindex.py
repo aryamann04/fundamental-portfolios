@@ -2,7 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
 
 largecap_tickers = pd.read_csv('/Users/aryaman/Downloads/sp500historicalconstituents.csv', parse_dates=['date'])
 
@@ -12,7 +12,7 @@ def all_largecap_tickers():
         tickers.update(tickers_list.strip("[]").replace("'", "").split(", "))
     return list(tickers)
 
-def read_and_process_csv():
+def process_csv():
     df = pd.read_csv('/Users/aryaman/Downloads/sp500monthlyreturn.csv')
     df['date'] = pd.to_datetime(df['MthCalDt']).dt.to_period('M')
     return df
@@ -27,9 +27,9 @@ def largecap_tickers(date):
 
     return tickers_list
 
-def mcap_dataframes():
-    df = read_and_process_csv()
-    date_range = pd.period_range(start='2008-01', end='2023-12', freq='M')
+def mcap_dataframes(start='2018-01', end='2023-12', freq='M'):
+    df = process_csv()
+    date_range = pd.period_range(start=start, end=end, freq=freq)
 
     mkt_cap = pd.DataFrame(index=date_range)
     mth_return = pd.DataFrame(index=date_range)
@@ -37,8 +37,6 @@ def mcap_dataframes():
     mcap_weighted_return = pd.DataFrame(index=date_range)
 
     for date in date_range:
-        print(f"Processing date: {date}")
-
         tickers = largecap_tickers(date)
         df_filtered = df[df['date'] == date]
 
@@ -77,12 +75,12 @@ def mcap_dataframes():
     eqw_index['n'] = mcap_weighted_return['n']
 
     # check if weights sum to 1
-    print(f"All weights sum to 1: {all(abs(mcap_weights['SumOfWeights'] - 1) < 1e-6)}")
+    # print(f"All weights sum to 1: {all(abs(mcap_weights['SumOfWeights'] - 1) < 1e-6)}")
 
     return mkt_cap, mth_return, mcap_weights, mcap_weighted_return, mcap_index, eqw_index
 
 def plot_return(final_df, equal_weight=False):
-    start_date = '2008-01-01'
+    start_date = '2018-01-01'
     end_date = '2023-12-31'
 
     if equal_weight:
@@ -117,7 +115,7 @@ def plot_return(final_df, equal_weight=False):
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
-_, _, _, _, mcap_index, eqw_index = mcap_dataframes()
+_, _, _, _, mcap_index, eqw_index = mcap_dataframes(freq='M')
 
 plot_return(eqw_index, equal_weight=True)
 plot_return(mcap_index, equal_weight=False)
