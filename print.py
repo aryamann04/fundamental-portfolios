@@ -2,42 +2,32 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import yfinance as yf
+from datetime import datetime
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 
+from largecapindex import mcap_dataframes
+
 def plot_portfolio_returns(daily_returns_list, start_date, end_date, granularity, index, metric):
-    if not daily_returns_list or not isinstance(daily_returns_list, list):
-        print("Input should be a list of DataFrames with daily returns.")
-        return
 
     portfolio_names = ['Less than or equal to 0', 'Quintile 1', 'Quintile 2', 'Quintile 3', 'Quintile 4', 'Quintile 5']
     num_portfolios = len(daily_returns_list)
     colors = plt.cm.Blues(np.linspace(0.3, 1, num_portfolios))  # Generate shades of blue
 
-    for df in daily_returns_list:
-        if not df.empty:
-            date_range = df['Date']
-            break
-    else:
-        print("No non-empty dataframes found in daily_returns_list.")
-        return
-
     if index == 'nasdaq100':
-        if granularity == 'daily':
-            index_return = yf.download('^NDX', start=start_date, end=end_date)
-        else:
-            index_return = yf.download('^NDX', start=start_date, end=end_date, interval='3mo')
+        i = '^NDX'
     elif index == 'russell200':
-        if granularity == 'daily':
-            index_return = yf.download('^RUT', start=start_date, end=end_date)
-        else:
-            index_return = yf.download('^RUT', start=start_date, end=end_date, interval='3mo')
+        i = '^RUT'
     else:
-        index_return = yf.download('^SPX', start=start_date, end=end_date, interval='3mo')
+        i = '^SPX'
+
+    if granularity == 'daily':
+        index_return = yf.download(i, start=start_date, end=end_date)
+    else:
+        index_return = yf.download(i, start=start_date, end=end_date, interval='1mo')
 
     index_return['Return'] = index_return['Adj Close'].pct_change()
-    index_return['Cumulative Return'] = (1 + index_return['Return']).cumprod()
     index_return['Cumulative Return'] = (1 + index_return['Return']).cumprod()
 
     plt.figure(figsize=(12, 8))
@@ -49,17 +39,22 @@ def plot_portfolio_returns(daily_returns_list, start_date, end_date, granularity
         daily_returns_df['Cumulative Return'] = (1 + daily_returns_df['Return']).cumprod()
         plt.plot(daily_returns_df['Date'], daily_returns_df['Cumulative Return'], label=portfolio_names[i], color=colors[i])
 
-    if index == 'nasdaq100':
-        plt.plot(index_return.index, index_return['Cumulative Return'], label='NASDAQ 100', linestyle='--', color='black')
-    elif index == 'russell200':
-        plt.plot(index_return.index, index_return['Cumulative Return'], label='Russell 2000', linestyle='--', color='black')
-    else:
-        plt.plot(index_return.index, index_return['Cumulative Return'], label='S&P 500', linestyle='--', color='black')
+    # plot calculated large cap index
+    if index == 'sp500':
+        start = (datetime.strptime(start_date, '%Y-%m-%d')).strftime('%Y-%m')
+        end = (datetime.strptime(end_date, '%Y-%m-%d')).strftime('%Y-%m')
+        _, _, _, _, mcap_index, _, = mcap_dataframes(start, end)
 
-    metric_description = get_metric_description(metric)
+        mcap_index['date'] = pd.to_datetime(mcap_index['date'])
+        mcap_index.set_index('date', inplace=True)
+        mcap_index['CumulativeReturn'] = (1 + mcap_index['return']).cumprod()
+        plt.plot(mcap_index.index, mcap_index['CumulativeReturn'], label='Large Cap Market Cap Weight', linestyle='--', color='red')
+
+    plt.plot(index_return.index, index_return['Cumulative Return'], label=index.upper(), linestyle='--', color='black')
+    plt.gca().set_xlim(right=pd.to_datetime(end_date))
     plt.xlabel('Date')
     plt.ylabel('Cumulative Return')
-    plt.title(f'Portfolios by {metric_description} (Cumulative Returns) from {start_date} to {end_date}')
+    plt.title(f'Portfolios by {get_metric_description(metric)} (Cumulative Returns) from {start_date} to {end_date}')
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -70,9 +65,30 @@ def print_portfolio_stats(portfolio_stats):
         for stat in stats:
             print(stat)
 
-# CAGR table and annual returns heatmap
-def portfolio_analysis(portfolio_stats, metric):
-    portfolio_categories = ['<=0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5']
+
+def get_index_return(year, index):
+    if index == 'nasdaq100':
+        start_date = f'{year}-09-30'
+        end_date = f'{year + 1}-09-30' if year < 2023 else '2024-06-01'
+        nasdaq_data = yf.download('^NDX', start=start_date, end=end_date)
+
+        start_price = nasdaq_data.loc[start_date, 'Close'] if start_date in nasdaq_data.index else \
+        nasdaq_data['Close'].iloc[0]
+        end_price = nasdaq_data.loc[end_date, 'Close'] if end_date in nasdaq_data.index else nasdaq_data['Close'].iloc[-1]
+    else:
+        start_date = f'{year}-01-01'
+        end_date = f'{year}-12-31'
+        data = yf.download('^GSPC', start=start_date, end=end_date)
+
+        start_price = data.loc[start_date, 'Close'] if start_date in data.index else \
+            data['Close'].iloc[0]
+        end_price = data.loc[end_date, 'Close'] if end_date in data.index else data['Close'].iloc[-1]
+
+    return (end_price / start_price) - 1
+
+
+def portfolio_analysis(portfolio_stats, metric, index):
+    portfolio_categories = ['<=0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', index.upper()]
 
     all_data = []
     for portfolio, stats_list in portfolio_stats.items():
@@ -85,23 +101,37 @@ def portfolio_analysis(portfolio_stats, metric):
     portfolio_df['Year'] = portfolio_df['Year'].astype(int)
     years = portfolio_df['Year'].nunique()
 
-    cagr_df = portfolio_df.groupby('Portfolio')['Annual Return'].apply(
+    cagr_df = portfolio_df.groupby('Portfolio')['Period Return'].apply(
         lambda x: (np.prod(1 + x) ** (1 / years)) - 1).reset_index()
     cagr_df.columns = ['Portfolio', 'CAGR']
 
+    index_returns = []
+    for year in portfolio_df['Year'].unique():
+        index_return = get_index_return(year, index)
+        if index_return is not None:
+            index_returns.append({'Portfolio': index.upper(), 'Year': year, 'Period Return': index_return})
+
+    index_df = pd.DataFrame(index_returns)
+    portfolio_df = pd.concat([portfolio_df, index_df], ignore_index=True)
+
+    index_cagr = index_df.groupby('Portfolio')['Period Return'].apply(
+        lambda x: (np.prod(1 + x) ** (1 / len(index_df['Year'].unique()))) - 1).reset_index()
+
+    cagr_df = pd.concat([cagr_df, index_cagr], ignore_index=True)
     cagr_df['Portfolio'] = pd.Categorical(cagr_df['Portfolio'], categories=portfolio_categories, ordered=True)
     cagr_df = cagr_df.sort_values('Portfolio')
 
     print("Compounded Annual Growth Rates (CAGR) for each Portfolio:")
     print(cagr_df.to_string(index=False))
 
-    heatmap_data = portfolio_df.pivot_table(index='Portfolio', columns='Year', values='Annual Return')
+    heatmap_data = portfolio_df.pivot_table(index='Portfolio', columns='Year', values='Period Return')
     heatmap_data = heatmap_data.reindex(portfolio_categories)
 
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(12, 8))
     sns.heatmap(heatmap_data, annot=True, fmt=".2%", cmap='RdYlGn', center=0, cbar_kws={'format': '%.0f%%'},
                 annot_kws={"size": 8, "rotation": 90})
     plt.title(f'Annual Returns by {get_metric_description(metric)}')
+    plt.xticks(rotation=90)
     plt.show()
 
 def resample_data(df, granularity):
