@@ -90,3 +90,16 @@ Below are the available metrics that you can use for your analysis:
 - `rd_sale`        : Research and Development/Sales
 - `adv_sale`       : Advertising Expenses/Sales
 - `staff_sale`     : Labor Expenses/Sales
+
+## Other Functionalities
+
+### Large Cap Index
+
+Because S&P 500 historical constituent entry and exit dates data are elusive, I created a Large Cap 'Top 500' index on the United States stock market by using a list of S&P 500 historical constituents. The index is monthly rebalanced and picks the top 500 companies by market capitalization each month from the list of tickers.
+
+### Regression 
+
+Perform univariate and multivariate linear regression of stock returns in a custom time period on one or several of the above value metrics. The below shows the output of a univariate OLS linear regression of NASDAQ 100 constituents on Net Profit Margin (npm). 
+<img width="1055" alt="npmregression" src="https://github.com/user-attachments/assets/1bd5600d-f5af-4d6d-8cb5-116ab21a58a2">
+<img width="632" alt="npmregressionresults" src="https://github.com/user-attachments/assets/0cd01bd5-39ec-499a-89ae-5c72b12b72f2">
+
