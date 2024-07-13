@@ -95,8 +95,7 @@ def mcap_backtest(metric, start_date, index='sp500'):
     df = process_csv()
 
     start_date = pd.to_datetime(start_date)
-    end_date = start_date + pd.DateOffset(months=1)
-    date_range = pd.period_range(start=start_date, end=end_date, freq='M')
+    date_range = pd.period_range(start=start_date, periods=1, freq='M')
     portfolio_dfs = []
 
     for portfolio in portfolio_tickers:
@@ -164,12 +163,13 @@ def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-
             if not portfolios[i].empty:
                 stats = {
                     'Year': current_date.year,
+                    'Month': current_date.month,
                     'Tickers': portfolios[i]['TICKER'].tolist(),
-                    'Min': portfolios[i][metric].min(),
-                    'Max': portfolios[i][metric].max(),
-                    'Mean': portfolios[i][metric].mean(),
-                    'Std': portfolios[i][metric].std(),
-                    'Annual Return': (1 + returns[i]['Return']).prod() - 1
+                    'Min': round(portfolios[i][metric].min(), 2),
+                    'Max': round(portfolios[i][metric].max(), 2),
+                    'Mean': round(portfolios[i][metric].mean(), 3),
+                    'Std': round(portfolios[i][metric].std(), 3),
+                    'Period Return': round(100*((1 + returns[i]['Return']).prod() - 1), 3)
                 }
                 portfolio_stats[i].append(stats)
 
