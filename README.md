@@ -100,6 +100,7 @@ Because S&P 500 historical constituent entry and exit dates data are elusive, I 
 ### Regression 
 
 Perform univariate and multivariate linear regression of stock returns in a custom time period on one or several of the above value metrics. The below shows the output of a univariate OLS linear regression of NASDAQ 100 constituents on Net Profit Margin (npm). 
+
 <img width="700" alt="npmregression" src="https://github.com/user-attachments/assets/1bd5600d-f5af-4d6d-8cb5-116ab21a58a2">
 <img width="300" alt="npmregressionresults" src="https://github.com/user-attachments/assets/0cd01bd5-39ec-499a-89ae-5c72b12b72f2">
 
