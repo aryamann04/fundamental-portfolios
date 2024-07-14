@@ -95,7 +95,7 @@ Below are the available metrics that you can use for your analysis:
 
 ### Large Cap Index
 
-Because S&P 500 historical constituent entry and exit dates data are elusive, I created a Large Cap 'Top 500' index on the United States stock market by using a list of S&P 500 historical constituents. The index is monthly rebalanced and picks the top 500 companies by market capitalization each month from the list of tickers.
+Because S&P 500 historical constituent entry and exit dates data are elusive, I created a Large Cap 'Top 500' index on the United States stock market by using a list of S&P 500 historical constituents. The index is rebalanced monthly, weighted by market capitalization, and picks the top 500 companies by market capitalization each month from the list of tickers.
 
 ### Regression 
 
