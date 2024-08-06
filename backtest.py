@@ -169,7 +169,7 @@ def rebalanced_portfolio(metric, index, start_date='2000-06-30', end_date='2023-
                     'Max': round(portfolios[i][metric].max(), 2),
                     'Mean': round(portfolios[i][metric].mean(), 3),
                     'Std': round(portfolios[i][metric].std(), 3),
-                    'Period Return': round(100*((1 + returns[i]['Return']).prod() - 1), 3)
+                    'Period Return': round(((1 + returns[i]['Return']).prod() - 1), 3)
                 }
                 portfolio_stats[i].append(stats)
 
