@@ -1,4 +1,3 @@
-import pandas as pd
 from backtest import rebalanced_portfolio
 from print import print_portfolio_stats, plot_portfolio_returns
 from portfolioanalysis import portfolio_analysis
