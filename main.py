@@ -1,15 +1,17 @@
 import pandas as pd
 from backtest import rebalanced_portfolio
-from print import print_portfolio_stats, plot_portfolio_returns, portfolio_analysis
+from print import print_portfolio_stats, plot_portfolio_returns
+from portfolioanalysis import portfolio_analysis
 
 #-------[parameters]-------#
-metric = 'pcf'
-start_date = '2018-01-01'
+metric = 'roce'
+start_date = '2022-01-01'
 end_date = '2024-01-01'
 index = 'sp500'
-plot_granularity = 'monthly'
-market_cap_weight = True
 
+market_cap_weight = True
+rebalance_frequency = 'monthly'
+plot_granularity = 'monthly'
 """
 available metrics for portfolio construction:
 
@@ -84,8 +86,9 @@ available metrics for portfolio construction:
 69. staff_sale    (Float)  : Labor Expenses/Sales (staff_sale)
 """
 
-portfolios, portfolio_stats = rebalanced_portfolio(metric, index=index, start_date=start_date, end_date=end_date, mcap=market_cap_weight)
+portfolios, portfolio_stats = rebalanced_portfolio(metric, index=index, start_date=start_date, end_date=end_date,
+                                                   frequency=rebalance_frequency, mcap=market_cap_weight)
 print_portfolio_stats(portfolio_stats)
-# portfolio_analysis(portfolio_stats, metric, index)
+portfolio_analysis(portfolio_stats, metric, index)
 plot_portfolio_returns(portfolios, start_date=start_date, end_date=end_date,
                        granularity=plot_granularity, index=index, metric=metric)
