@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import seaborn as sns
 import yfinance as yf
 from datetime import datetime
 
@@ -64,75 +63,6 @@ def print_portfolio_stats(portfolio_stats):
         print(f"\nPortfolio {i}:")
         for stat in stats:
             print(stat)
-
-
-def get_index_return(year, index):
-    if index == 'nasdaq100':
-        start_date = f'{year}-09-30'
-        end_date = f'{year + 1}-09-30' if year < 2023 else '2024-06-01'
-        nasdaq_data = yf.download('^NDX', start=start_date, end=end_date)
-
-        start_price = nasdaq_data.loc[start_date, 'Close'] if start_date in nasdaq_data.index else \
-        nasdaq_data['Close'].iloc[0]
-        end_price = nasdaq_data.loc[end_date, 'Close'] if end_date in nasdaq_data.index else nasdaq_data['Close'].iloc[-1]
-    else:
-        start_date = f'{year}-01-01'
-        end_date = f'{year}-12-31'
-        data = yf.download('^GSPC', start=start_date, end=end_date)
-
-        start_price = data.loc[start_date, 'Close'] if start_date in data.index else \
-            data['Close'].iloc[0]
-        end_price = data.loc[end_date, 'Close'] if end_date in data.index else data['Close'].iloc[-1]
-
-    return (end_price / start_price) - 1
-
-
-def portfolio_analysis(portfolio_stats, metric, index):
-    portfolio_categories = ['<=0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', index.upper()]
-
-    all_data = []
-    for portfolio, stats_list in portfolio_stats.items():
-        for stats in stats_list:
-            stats['Portfolio'] = portfolio_categories[portfolio]
-            all_data.append(stats)
-
-    portfolio_df = pd.DataFrame(all_data)
-
-    portfolio_df['Year'] = portfolio_df['Year'].astype(int)
-    years = portfolio_df['Year'].nunique()
-
-    cagr_df = portfolio_df.groupby('Portfolio')['Period Return'].apply(
-        lambda x: (np.prod(1 + x) ** (1 / years)) - 1).reset_index()
-    cagr_df.columns = ['Portfolio', 'CAGR']
-
-    index_returns = []
-    for year in portfolio_df['Year'].unique():
-        index_return = get_index_return(year, index)
-        if index_return is not None:
-            index_returns.append({'Portfolio': index.upper(), 'Year': year, 'Period Return': index_return})
-
-    index_df = pd.DataFrame(index_returns)
-    portfolio_df = pd.concat([portfolio_df, index_df], ignore_index=True)
-
-    index_cagr = index_df.groupby('Portfolio')['Period Return'].apply(
-        lambda x: (np.prod(1 + x) ** (1 / len(index_df['Year'].unique()))) - 1).reset_index()
-
-    cagr_df = pd.concat([cagr_df, index_cagr], ignore_index=True)
-    cagr_df['Portfolio'] = pd.Categorical(cagr_df['Portfolio'], categories=portfolio_categories, ordered=True)
-    cagr_df = cagr_df.sort_values('Portfolio')
-
-    print("Compounded Annual Growth Rates (CAGR) for each Portfolio:")
-    print(cagr_df.to_string(index=False))
-
-    heatmap_data = portfolio_df.pivot_table(index='Portfolio', columns='Year', values='Period Return')
-    heatmap_data = heatmap_data.reindex(portfolio_categories)
-
-    plt.figure(figsize=(12, 8))
-    sns.heatmap(heatmap_data, annot=True, fmt=".2%", cmap='RdYlGn', center=0, cbar_kws={'format': '%.0f%%'},
-                annot_kws={"size": 8, "rotation": 90})
-    plt.title(f'Annual Returns by {get_metric_description(metric)}')
-    plt.xticks(rotation=90)
-    plt.show()
 
 def resample_data(df, granularity):
 
