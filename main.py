@@ -4,14 +4,14 @@ from print import print_portfolio_stats, plot_portfolio_returns
 from portfolioanalysis import portfolio_analysis
 
 #-------[parameters]-------#
-metric = 'roce'
-start_date = '2022-01-01'
+metric = 'pe_exi'
+start_date = '2003-01-01'
 end_date = '2024-01-01'
-index = 'sp500'
+index = 'nasdaq100'
 
-market_cap_weight = True
-rebalance_frequency = 'monthly'
-plot_granularity = 'monthly'
+market_cap_weight = False
+rebalance_frequency = 'yearly'
+plot_granularity = 'quarterly'
 """
 available metrics for portfolio construction:
 
