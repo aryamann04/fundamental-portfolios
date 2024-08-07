@@ -10,14 +10,41 @@ def index_return(index, start_date, end_date):
     else:
         ticker = '^GSPC'
 
-    index_data = yf.download(ticker, start=start_date, end=end_date)
-    index_returns = index_data['Adj Close'].pct_change().dropna()
+    # Convert string dates to datetime objects
+    start_date = pd.to_datetime(start_date)
+    end_date = pd.to_datetime(end_date)
 
-    rolling_yearly_returns = (1 + index_returns).rolling(252).apply(np.prod, raw=True) - 1
-    rolling_yearly_df = pd.DataFrame(rolling_yearly_returns, columns=['Period Return'])
-    rolling_yearly_df.index = pd.to_datetime(rolling_yearly_df.index)
+    # Initialize a DataFrame to store yearly returns
+    yearly_returns = []
 
-    return rolling_yearly_df.dropna()
+    current_date = start_date
+
+    while current_date < end_date:
+        # Calculate the end of the current year period
+        next_year_date = current_date + pd.DateOffset(years=1)
+
+        # Download data for the current year period
+        index_data = yf.download(ticker, start=current_date, end=next_year_date)
+
+        # Calculate the yearly return if there is sufficient data
+        if not index_data.empty:
+            start_price = index_data['Adj Close'].iloc[0]
+            end_price = index_data['Adj Close'].iloc[-1]
+            period_return = (end_price / start_price) - 1
+
+            yearly_returns.append({
+                'Year': current_date.year,
+                'Period Return': period_return
+            })
+
+        # Move to the next year
+        current_date = next_year_date
+
+    # Set the Year as the index
+    yearly_returns_df = pd.DataFrame(yearly_returns)
+    yearly_returns_df.set_index('Year', inplace=True)
+
+    return yearly_returns_df
 
 def portfolio_analysis(portfolio_stats, metric, index):
     portfolio_categories = ['<=0', 'Q1', 'Q2', 'Q3', 'Q4', 'Q5', index.upper()]
@@ -39,14 +66,11 @@ def portfolio_analysis(portfolio_stats, metric, index):
     start_date = f"{min_year}-{min_month:02d}-01"
     end_date = f"{max_year + 1}-{max_month:02d}-01"
     index_returns = index_return(index, start_date, end_date)
-
-    index_returns_filtered = index_returns[index_returns.index.month == min_month]
-    index_returns_filtered = index_returns_filtered[index_returns_filtered.index.year >= min_year + 1]
+    index_returns.index = pd.to_datetime(index_returns.index, format='%Y')
 
     index_data = pd.DataFrame({
-        'Year': index_returns_filtered.index.year,
-        'Month': index_returns_filtered.index.month,
-        'Period Return': index_returns_filtered['Period Return'].values,
+        'Year': index_returns.index.year,
+        'Period Return': index_returns['Period Return'].values,
         'Portfolio': index.upper()
     })
 
@@ -59,8 +83,9 @@ def portfolio_analysis(portfolio_stats, metric, index):
     cagr_df['Portfolio'] = pd.Categorical(cagr_df['Portfolio'], categories=portfolio_categories, ordered=True)
     cagr_df = cagr_df.sort_values('Portfolio')
 
-    print("Compounded Annual Growth Rates (CAGR) for each Portfolio:")
+    print("*-------------------------------*")
     print(cagr_df.to_string(index=False))
+    print("*-------------------------------*")
 
     heatmap_data = portfolio_df.pivot_table(index='Portfolio', columns='Year', values='Period Return', aggfunc='sum')
     heatmap_data = heatmap_data.reindex(portfolio_categories)
