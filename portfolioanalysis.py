@@ -10,23 +10,15 @@ def index_return(index, start_date, end_date):
     else:
         ticker = '^GSPC'
 
-    # Convert string dates to datetime objects
     start_date = pd.to_datetime(start_date)
     end_date = pd.to_datetime(end_date)
-
-    # Initialize a DataFrame to store yearly returns
     yearly_returns = []
-
     current_date = start_date
 
     while current_date < end_date:
-        # Calculate the end of the current year period
         next_year_date = current_date + pd.DateOffset(years=1)
-
-        # Download data for the current year period
         index_data = yf.download(ticker, start=current_date, end=next_year_date)
 
-        # Calculate the yearly return if there is sufficient data
         if not index_data.empty:
             start_price = index_data['Adj Close'].iloc[0]
             end_price = index_data['Adj Close'].iloc[-1]
@@ -37,10 +29,8 @@ def index_return(index, start_date, end_date):
                 'Period Return': period_return
             })
 
-        # Move to the next year
         current_date = next_year_date
 
-    # Set the Year as the index
     yearly_returns_df = pd.DataFrame(yearly_returns)
     yearly_returns_df.set_index('Year', inplace=True)
 
