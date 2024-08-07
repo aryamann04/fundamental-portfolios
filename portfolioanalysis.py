@@ -65,6 +65,7 @@ def portfolio_analysis(portfolio_stats, metric, index):
     })
 
     portfolio_df = pd.concat([portfolio_df, index_data], ignore_index=True)
+    portfolio_df = portfolio_df[portfolio_df['Year'] <= max_year]
 
     years = portfolio_df['Year'].nunique()
     cagr_df = portfolio_df.groupby('Portfolio')['Period Return'].apply(
